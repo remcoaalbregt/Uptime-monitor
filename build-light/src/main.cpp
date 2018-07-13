@@ -104,10 +104,9 @@ void setup() {
   Serial.println("Setup complete..");  
 }
 
-void endLoop(const String & s message) {
+void endLoop(const String message) {
   Serial.println(message);
   delay(500);
-  return;
 }
 
 void loop() {
@@ -116,6 +115,7 @@ void loop() {
   // Send a message to manager_server
   if (!manager.sendtoWait(data, sizeof(data), SERVER_ADDRESS)) {
     endLoop("sendtoWait failed");
+    return;
   }
 
   // Now wait for a reply from the server
@@ -123,6 +123,7 @@ void loop() {
   uint8_t from;   
   if (!manager.recvfromAckTimeout(buffer, &length, 2000, &from)) {
     endLoop("No reply, is nrf24_reliable_datagram_server running?");
+    return;
   }
     
   Serial.print("got reply from : 0x");
