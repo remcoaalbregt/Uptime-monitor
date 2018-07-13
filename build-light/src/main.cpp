@@ -4,19 +4,14 @@
 #include <RH_NRF24.h>
 #include <SPI.h>
 
-#define CLIENT_ADDRESS 1
-#define SERVER_ADDRESS 2
-
-// Singleton instance of the radio driver
 RH_NRF24 driver;
-
 RHReliableDatagram manager(driver, CLIENT_ADDRESS);
 
 static const uint8_t allLights[] = {RED,YELLOW,GREEN};
 uint8_t numberOfLights = sizeof(allLights);
 
-uint8_t data[] = "Build-light transmition request";
-uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];
+uint8_t data[] = "Hello World!";
+uint8_t buffer[RH_NRF24_MAX_MESSAGE_LEN];
 
 enum Command {ALARM, WARNING, GOOD, LUNCH, DEMO};
 
@@ -100,9 +95,7 @@ void handleCommand(Command command) {
 void setup() {
   Serial.begin(9600);
 
-  if (!manager.init())
-    Serial.println("init failed");
-    // Defaults after init are 2.402 GHz (channel 2), 2Mbps, 0dBm
+  if (!manager.init()) { Serial.println("init failed"); }
 
   for (int thisPin = 0; thisPin < numberOfLights; thisPin++) {
     pinMode(allLights[thisPin], OUTPUT);
@@ -111,26 +104,45 @@ void setup() {
   Serial.println("Setup complete..");  
 }
 
-void loop() {
-  // Send a message to manager_server
-  // if (manager.sendtoWait(data, sizeof(data), SERVER_ADDRESS)) {
-  //   // Now wait for a reply from the server
-  //   uint8_t len = sizeof(buf);
-  //   uint8_t from;   
-  //   if (manager.recvfromAckTimeout(buf, &len, 2000, &from)) {
-  //     Serial.print("got reply from : 0x");
-  //     Serial.print(from, HEX);
-  //     Serial.print(": ");
-  //     Serial.println((char*)buf);
-  //   } else {
-  //     Serial.println("No reply, is the gateway running?");
-  //   }
-  // } else {
-  //   Serial.println("sendtoWait failed");
-  // }
-  // delay(500);
+void endLoop(const String & s message) {
+  Serial.println(message);
+  delay(500);
+  return;
+}
 
-  handleCommand(ALARM);
-  delay(2000);
-  handleCommand(WARNING);
+void loop() {
+  Serial.println("Sending to nrf24_reliable_datagram_server");
+    
+  // Send a message to manager_server
+  if (!manager.sendtoWait(data, sizeof(data), SERVER_ADDRESS)) {
+    endLoop("sendtoWait failed");
+  }
+
+  // Now wait for a reply from the server
+  uint8_t length = sizeof(buffer);
+  uint8_t from;   
+  if (!manager.recvfromAckTimeout(buffer, &length, 2000, &from)) {
+    endLoop("No reply, is nrf24_reliable_datagram_server running?");
+  }
+    
+  Serial.print("got reply from : 0x");
+  Serial.print(from, HEX);
+  Serial.print(": ");
+  Serial.println((char*)buffer);
+
+  // uint8_t buffer[RH_NRF24_MAX_MESSAGE_LEN];
+  // uint8_t length = sizeof(buffer);
+
+  // if (nrf24.waitAvailableTimeout(500)) {
+  //   // Should be a reply message for us now   
+  //   if (nrf24.recv(buffer, &length)) {
+  //     Serial.print("received command: ");
+  //     Serial.println((char*)buffer);
+
+  //     // handleCommand(ALARM);
+  //   } else {
+  //     Serial.println("recv failed");
+  //   }
+  // }
+  // delay(400);
 }
