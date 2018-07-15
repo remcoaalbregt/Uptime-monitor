@@ -7,18 +7,14 @@
 RH_NRF24 driver;
 RHReliableDatagram manager(driver, SERVER_ADDRESS);
 
-static const uint8_t allLights[] = {
-  RED,
-  YELLOW,
-  GREEN
-};
+static const uint8_t allLights[] = {RED,YELLOW,GREEN};
 
 enum Command {ALARM = '1', WARNING = '2', GOOD = '3', LUNCH = '4', DEMO = '5'};
 
 void setLights(uint8_t colors[], uint8_t state) {
   uint8_t length = sizeof(colors);
 
-  for (int colorIndex = 0; colorIndex < length; colorIndex++) {
+  for (int colorIndex = 0; colorIndex < (length+1); colorIndex++) {
     Serial.print("setting color: ");
     Serial.print(colors[colorIndex]);
     Serial.print(" to: ");
@@ -65,10 +61,7 @@ void flashSlow(uint8_t color, uint8_t numberOfTimes, bool beep = false) {
   flashLight(color, numberOfTimes, 1000);
 }
 
-void handleCommand(Command command) {
-  Serial.print("Received command: ");
-  Serial.println(command);
-
+void handleCommand(uint8_t command) {
   switch (command) {
     case ALARM:
       Serial.println("Received Alarm");
