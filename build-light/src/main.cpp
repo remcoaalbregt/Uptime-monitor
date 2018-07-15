@@ -8,7 +8,6 @@ RH_NRF24 driver;
 RHReliableDatagram manager(driver, SERVER_ADDRESS);
 
 static const uint8_t allLights[] = {RED,YELLOW,GREEN};
-
 enum Command {ALARM = '1', WARNING = '2', GOOD = '3', LUNCH = '4', DEMO = '5'};
 
 void setLights(uint8_t colors[], uint8_t state) {
@@ -40,7 +39,7 @@ void switchLight(uint8_t color) {
   digitalWrite(color, HIGH);
 }
 
-void flashLight(uint8_t color, uint8_t numberOfTimes, uint16_t speed, bool beep = false) {
+void flashLight(uint8_t color, uint8_t numberOfTimes, uint16_t speed) {
   allOff();
   for(int count = 0; count < numberOfTimes; count++) {
     Serial.print("Flash ");
@@ -50,27 +49,45 @@ void flashLight(uint8_t color, uint8_t numberOfTimes, uint16_t speed, bool beep 
     digitalWrite(color, LOW);
     delay(speed);
   }
-  digitalWrite(color, LOW);
+  digitalWrite(color, HIGH);
 }
 
-void flashFast(uint8_t color, uint8_t numberOfTimes, bool beep = false) {
-  flashLight(color, numberOfTimes, 500);
+void flashFast(uint8_t color, uint8_t numberOfTimes) {
+  flashLight(color, numberOfTimes, 300);
 }
 
-void flashSlow(uint8_t color, uint8_t numberOfTimes, bool beep = false) {
-  flashLight(color, numberOfTimes, 1000);
+void flashSlow(uint8_t color, uint8_t numberOfTimes) {
+  flashLight(color, numberOfTimes, 800);
+}
+
+void siren(int fromHz, int toHz, int iterations, int timePerFreq = 50) {
+  for(int i=0;i<iterations;i++) {
+    for(int hz=fromHz;hz<toHz;hz++){
+      tone(BEEP_PIN, hz, timePerFreq);
+      delay(4);
+    }
+    for(int hz=toHz;hz>fromHz;hz--){
+      tone(BEEP_PIN, hz, timePerFreq);
+      delay(4);
+    }
+  }
+}
+
+void handleAlarm() {
+    Serial.println("Received Alarm");
+    flashFast(RED, 2);
+    siren(440, 1000, 2);
+    siren(440, 1000, 1);
 }
 
 void handleCommand(uint8_t command) {
   switch (command) {
     case ALARM:
-      Serial.println("Received Alarm");
-      flashFast(RED, 5, true);
-      switchLight(RED);
+      handleAlarm();
       break;
     case WARNING:
       Serial.println("Received Warning");
-      flashSlow(YELLOW, 3, true);
+      flashSlow(YELLOW, 3);
       switchLight(YELLOW);
       break;
     case GOOD:
@@ -97,6 +114,8 @@ void setup() {
     pinMode(allLights[thisPin], OUTPUT);
     digitalWrite(allLights[thisPin], LOW);
   }
+
+  pinMode(BEEP_PIN, OUTPUT);
 
   if (!manager.init()) {
       Serial.println("init failed");
